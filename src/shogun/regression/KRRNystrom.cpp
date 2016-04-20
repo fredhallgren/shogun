@@ -47,7 +47,6 @@ bool CKRRNystrom::solve_krr_system()
 	for(index_t i=0; i<n; i++)
 		kernel_matrix(i,i)+=m_tau;
 
-	// Create random submatrix
 	SGVector<int32_t> col(m_m);
 	col.random(0,n-m_m+1);
 	CMath::qsort(col.vector, m_m);
