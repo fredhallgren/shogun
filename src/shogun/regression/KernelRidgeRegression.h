@@ -130,8 +130,8 @@ class CKernelRidgeRegression : public CKernelMachine
 	private:
 		void init();
 
-		/** regularization parameter tau */
 	protected:
+		/** regularization parameter tau */
 		float64_t m_tau;
 
 	private:
