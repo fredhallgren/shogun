@@ -15,19 +15,19 @@
 
 namespace shogun {
 
-class CKrrNystrom : public CKernelRidgeRegression
+class CKRRNystrom : public CKernelRidgeRegression
 {
 public:
 	MACHINE_PROBLEM_TYPE(PT_REGRESSION); // Seems need to be set for all classes
 
 	// Default constructor
-	CKrrNystrom();
+	CKRRNystrom();
 
 	// Constructor
-	CKrrNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab);
+	CKRRNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab);
 
 	// Default destructor
-	virtual ~CKrrNystrom() {}
+	virtual ~CKRRNystrom() {}
 
 	// Setters
 	inline void set_m(int32_t m) { m_m = m; };
@@ -35,7 +35,7 @@ public:
 	inline void set_tau(float64_t tau) { m_tau = tau; };
 
 	// Return object name
-	virtual const char* get_name() const { return "KrrNystrom"; }
+	virtual const char* get_name() const { return "KRRNystrom"; }
 
 	EMachineType get_classifier_type()
 	{

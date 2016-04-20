@@ -9,7 +9,7 @@
  * Copyright (C) 1999-2009 Fraunhofer Institute FIRST and Max-Planck-Society
  */
 
-#include <shogun/regression/KrrNystrom.h>
+#include <shogun/regression/KRRNystrom.h>
 #include <shogun/labels/RegressionLabels.h>
 #include <shogun/mathematics/eigen3.h>
 #include <shogun/mathematics/Math.h>
@@ -17,12 +17,12 @@
 using namespace shogun;
 using namespace Eigen;
 
-CKrrNystrom::CKrrNystrom() : CKernelRidgeRegression()
+CKRRNystrom::CKRRNystrom() : CKernelRidgeRegression()
 {
 	init();
 }
 
-CKrrNystrom::CKrrNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab)
+CKRRNystrom::CKRRNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab)
 : CKernelRidgeRegression(tau, k, lab)
 {
 	init();
@@ -30,14 +30,14 @@ CKrrNystrom::CKrrNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab)
 	m_m=m;
 }
 
-void CKrrNystrom::init()
+void CKRRNystrom::init()
 {
 	// Initialize parameters
 	m_m=1000;  // TODO change to what seems to make sense
 	// TODO check that less than n
 }
 
-bool CKrrNystrom::solve_krr_system()
+bool CKRRNystrom::solve_krr_system()
 {
 	SGMatrix<float64_t> kernel_matrix(kernel->get_kernel_matrix());
 	int32_t n=kernel_matrix.num_rows;
