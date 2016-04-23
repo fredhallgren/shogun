@@ -1,12 +1,32 @@
 
 /*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
+ * Copyright (c) The Shogun Machine Learning Toolbox
  * Written (W) 2016 Fredrik Hallgren
- * Copyright (C) 1999-2009 Fraunhofer Institute FIRST and Max-Planck-Society
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * The views and conclusions contained in the software and documentation are those
+ * of the authors and should not be interpreted as representing official policies,
+ * either expressed or implied, of the Shogun Development Team.
  */
 
 #include <shogun/regression/KRRNystrom.h>
@@ -59,6 +79,7 @@ bool CKRRNystrom::solve_krr_system()
 	Map<VectorXd> y_eig(y.vector, n);
 	Map<VectorXd> alphas_eig(m_alpha.vector, n);
 
+	/* Calculate the Moore-Penrose pseudoinverse */
 	MatrixXd Kplus = m_tau*K_mm_eig + K_mn_eig*K_nm_eig;
 	SelfAdjointEigenSolver<MatrixXd> solver(Kplus);
 	if (solver.info()!=Success)
@@ -66,9 +87,10 @@ bool CKRRNystrom::solve_krr_system()
 		SG_WARNING("Eigendecomposition failed.")
 		return false;
 	}
+	/* Solve the system for alphas */
 	MatrixXd D=solver.eigenvalues().asDiagonal();
-	MatrixXd eigvec = solver.eigenvectors(); // TODO confirm normalized and vectors along columns
-	MatrixXd pseudoinv = eigvec*D.inverse()*eigvec.transpose(); // TODO confirm diagonal inverse efficient
+	MatrixXd eigvec=solver.eigenvectors(); // TODO confirm normalized and vectors along columns
+	MatrixXd pseudoinv=eigvec*D.inverse()*eigvec.transpose(); // TODO confirm diagonal inverse efficient
 	alphas_eig=1.0/m_tau*(y_eig-K_nm_eig*pseudoinv*K_mn_eig*y_eig); // TODO maybe split up
 
 	return true;
