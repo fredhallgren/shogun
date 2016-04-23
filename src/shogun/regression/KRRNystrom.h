@@ -18,7 +18,7 @@ namespace shogun {
 class CKRRNystrom : public CKernelRidgeRegression
 {
 public:
-	MACHINE_PROBLEM_TYPE(PT_REGRESSION); // Seems need to be set for all classes
+	MACHINE_PROBLEM_TYPE(PT_REGRESSION);
 
 	// Default constructor
 	CKRRNystrom();

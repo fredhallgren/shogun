@@ -32,7 +32,6 @@ CKRRNystrom::CKRRNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab)
 
 void CKRRNystrom::init()
 {
-	// Initialize parameters
 	m_m=1000;  // TODO change to what seems to make sense
 	// TODO check that less than n
 }
@@ -42,10 +41,6 @@ bool CKRRNystrom::solve_krr_system()
 	SGMatrix<float64_t> kernel_matrix(kernel->get_kernel_matrix());
 	int32_t n=kernel_matrix.num_rows;
 	SGVector<float64_t> y=((CRegressionLabels*)m_labels)->get_labels();
-
-	// Add tau parameter
-	for(index_t i=0; i<n; i++)
-		kernel_matrix(i,i)+=m_tau;
 
 	SGVector<int32_t> col(m_m);
 	col.random(0,n-m_m+1);
@@ -57,22 +52,18 @@ bool CKRRNystrom::solve_krr_system()
 	for (index_t j=0; j<n*m_m; ++j) // TODO Assuming row-first indexing
 		K_nm[j]=kernel_matrix(j/m_m,col[j%m_m]+j%m_m);
 
-	// Create Eigen3 objects
-	Map<MatrixXd> K_mm_eigen(K_mm.matrix, m_m, m_m);
-	Map<MatrixXd> K_nm_eigen(K_nm.matrix, n, m_m);
-	Map<VectorXd> y_eigen(y.vector, n);
-	Map<VectorXd> alphas_eigen(m_alpha.vector, n);
+	Map<MatrixXd> K_mm_eig(K_mm.matrix, m_m, m_m);
+	Map<MatrixXd> K_nm_eig(K_nm.matrix, n, m_m);
+	MatrixXd K_mn_eig = K_nm_eig.transpose();
+	Map<VectorXd> y_eig(y.vector, n);
+	Map<VectorXd> alphas_eig(m_alpha.vector, n);
 
-	// Perform eigendecomposition of K_mm and calculate approximate
-	// eigendecomposition (U*D*U^T) of original kernel matrix
-	SelfAdjointEigenSolver<MatrixXd> solver(K_mm_eigen);
-	// TODO add check for success
+	MatrixXd Kplus = m_tau*K_mm_eig + K_mn_eig*K_nm_eig;
+	SelfAdjointEigenSolver<MatrixXd> solver(Kplus); // TODO add check for success
 	MatrixXd D=solver.eigenvalues().asDiagonal();
-	MatrixXd eigvec=solver.eigenvectors(); // TODO confirm normalized and vectors along columns
-	MatrixXd U=K_nm_eigen*eigvec*D;
-
-	// Solve system
-	alphas_eigen=U*D.inverse()*U.transpose()*y_eigen; // TODO make sure diagonal inverse efficient
+	MatrixXd eigvec = solver.eigenvectors(); // TODO confirm normalized and vectors along columns
+	MatrixXd pseudoinv = eigvec*D.inverse()*eigvec.transpose(); // TODO confirm diagonal inverse efficient
+	alphas_eig=1.0/m_tau*(y_eig-K_nm_eig*pseudoinv*K_mn_eig*y_eig); // TODO maybe split up
 
 	return true;
 }
