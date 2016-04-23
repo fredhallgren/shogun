@@ -44,7 +44,7 @@ bool CKRRNystrom::solve_krr_system()
 	SGVector<float64_t> y=((CRegressionLabels*)m_labels)->get_labels();
 
 	SGVector<int32_t> col(m_m);
-	col.random(0,n-m_m+1);
+	col.random(0,n-m_m);
 	CMath::qsort(col.vector, m_m);
 	SGMatrix<float64_t> K_mm(m_m,m_m);
 	SGMatrix<float64_t> K_nm(n,m_m);
@@ -60,7 +60,12 @@ bool CKRRNystrom::solve_krr_system()
 	Map<VectorXd> alphas_eig(m_alpha.vector, n);
 
 	MatrixXd Kplus = m_tau*K_mm_eig + K_mn_eig*K_nm_eig;
-	SelfAdjointEigenSolver<MatrixXd> solver(Kplus); // TODO add check for success
+	SelfAdjointEigenSolver<MatrixXd> solver(Kplus);
+	if (solver.info()!=Success)
+	{
+		SG_WARNING("Eigendecomposition failed.")
+		return false;
+	}
 	MatrixXd D=solver.eigenvalues().asDiagonal();
 	MatrixXd eigvec = solver.eigenvectors(); // TODO confirm normalized and vectors along columns
 	MatrixXd pseudoinv = eigvec*D.inverse()*eigvec.transpose(); // TODO confirm diagonal inverse efficient
