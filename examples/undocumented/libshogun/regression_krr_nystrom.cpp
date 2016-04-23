@@ -12,7 +12,7 @@
 #include <shogun/features/DenseFeatures.h>
 #include <shogun/labels/RegressionLabels.h>
 #include <shogun/kernel/GaussianKernel.h>
-#include <shogun/regression/KrrNystrom.h>
+#include <shogun/regression/KRRNystrom.h>
 
 using namespace shogun;
 
@@ -57,7 +57,7 @@ void test_krr_nystrom()
 
 	/* kernel ridge regression and the nystrom approximation */
 	float64_t tau=0.0001;
-	CKrrNystrom* nystrom=new CKrrNystrom(tau, 10, kernel, labels);
+	CKRRNystrom* nystrom=new CKRRNystrom(tau, 10, kernel, labels);
 
 	nystrom->train();
 
