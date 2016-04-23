@@ -32,14 +32,15 @@ CKRRNystrom::CKRRNystrom(float64_t tau, int32_t m, CKernel* k, CLabels* lab)
 
 void CKRRNystrom::init()
 {
-	m_m=1000;  // TODO change to what seems to make sense
-	// TODO check that less than n
+	m_m=1000;
 }
 
 bool CKRRNystrom::solve_krr_system()
 {
-	SGMatrix<float64_t> kernel_matrix(kernel->get_kernel_matrix());
-	int32_t n=kernel_matrix.num_rows;
+	int32_t n=kernel->get_num_vec_lhs(); // TODO ever different from rhs?
+
+	ASSERT(m_m <= n);
+
 	SGVector<float64_t> y=((CRegressionLabels*)m_labels)->get_labels();
 
 	SGVector<int32_t> col(m_m);
@@ -48,9 +49,9 @@ bool CKRRNystrom::solve_krr_system()
 	SGMatrix<float64_t> K_mm(m_m,m_m);
 	SGMatrix<float64_t> K_nm(n,m_m);
 	for (index_t i=0; i<m_m*m_m; ++i)
-		K_mm[i]=kernel_matrix(col[i/m_m]+i/m_m,col[i%m_m]+i%m_m);
+		K_mm[i]=kernel->kernel(col[i/m_m]+i/m_m,col[i%m_m]+i%m_m);
 	for (index_t j=0; j<n*m_m; ++j) // TODO Assuming row-first indexing
-		K_nm[j]=kernel_matrix(j/m_m,col[j%m_m]+j%m_m);
+		K_nm[j]=kernel->kernel(j/m_m,col[j%m_m]+j%m_m);
 
 	Map<MatrixXd> K_mm_eig(K_mm.matrix, m_m, m_m);
 	Map<MatrixXd> K_nm_eig(K_nm.matrix, n, m_m);
