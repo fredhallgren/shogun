@@ -116,6 +116,11 @@ protected:
 	 */
 	bool solve_krr_system();
 
+	/** Sample indices to pick rows/columns from kernel matrix
+	 *
+	 * @return SGVector<int32_t> with sampled indices
+	 */
+	SGVector<int32_t> sample_index();
 private:
 	void init();
 
