@@ -102,6 +102,9 @@ less than number of data points (%d)\n", m_num_rkhs_basis, n);
 	/** @return object name */
 	virtual const char* get_name() const { return "KRRNystrom"; }
 
+	/** Solve krr system incrementally using Cholesky rank one updates */
+	bool solve_krr_system_incremental();
+
 protected:
 	/** Train regression using the Nyström method.
 	 *
