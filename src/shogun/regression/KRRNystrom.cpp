@@ -78,8 +78,6 @@ SGVector<int32_t> CKRRNystrom::subsample_indices()
 bool CKRRNystrom::solve_krr_system()
 {
 
-	solve_krr_system_incremental(); // just for testing...
-
 
 	int32_t n=kernel->get_num_vec_lhs();
 
@@ -136,24 +134,20 @@ bool CKRRNystrom::solve_krr_system()
 		alpha_n[col[i]]=alphas_eig[i];
 	m_alpha=alpha_n;
 
+	solve_krr_system_incremental(); // for testing
+
 	return true;
 }
 
 
-
 bool CKRRNystrom::solve_krr_system_incremental()
 {
-	// start just implementing this function to test it... then split the
-	// updates to separate function
-	// Need to call this anyway ... idea is to do it from the first basis vector
-
 	int32_t n=kernel->get_num_vec_lhs();
 	SGVector<float64_t> y_sg=((CRegressionLabels*)m_labels)->get_labels();
 	if (y_sg==NULL)
 		SG_ERROR("Labels not set.\n");
 	SGVector<int32_t> col=subsample_indices(); // m set already
 
-	// Compute kernel matrix Knm - need this but might later be done in incremental method
 	SGMatrix<float64_t> K_nm_sg(m_num_rkhs_basis, n);
 	SGMatrix<float64_t> K_mm_sg(m_num_rkhs_basis, m_num_rkhs_basis);
 	#pragma omp parallel for
@@ -169,41 +163,52 @@ bool CKRRNystrom::solve_krr_system_incremental()
 	Map<MatrixXd> K_nm(K_nm_sg.matrix, n, m_num_rkhs_basis);
 	Map<MatrixXd> K_mm(K_mm_sg.matrix, m_num_rkhs_basis, m_num_rkhs_basis);
 	Map<VectorXd> y(y_sg.vector, n);
-	float64_t gamma=K_nm.col(0).dot(K_nm.col(0))+m_tau*K_mm(0,0);
-	//MatrixXd R_i=gamma_1.array().sqrt(); // auto cast to matrix??
-	MatrixXd M(m_num_rkhs_basis, m_num_rkhs_basis); // Matrix to update
-	M.fill(0);
+	VectorXd a=K_nm.col(0);
+	float64_t gamma=a.dot(a)+m_tau*K_mm(0,0);
+	MatrixXd M=MatrixXd::Identity(m_num_rkhs_basis, m_num_rkhs_basis); // Matrix to update
 	M(0,0) = gamma;
-	LLT<MatrixXd> llt(M); // calculate initial cholesky
+	LLT<MatrixXd> llt(M);
 	if (llt.info()!=Eigen::Success)
+		SG_ERROR("Cholesky decomposition failed\n");
+	MatrixXd A;
+	VectorXd b, c, alphas;
+	float64_t g;
+
+	// Pre-calculate
+	VectorXd x0=K_nm.transpose()*y;
+	VectorXd x=VectorXd::Zero(m_num_rkhs_basis);
+	x(0)=x0(0);
+	VectorXd v=VectorXd::Zero(m_num_rkhs_basis);
+	VectorXd u=VectorXd::Zero(m_num_rkhs_basis);
+	VectorXd e=VectorXd::Zero(m_num_rkhs_basis);
+
+	for (index_t i=1; i<m_num_rkhs_basis; ++i)
 	{
-		SG_WARNING("Cholesky decomposition failed\n"); // should get here if no work...
-		return false;
+		A=K_nm.leftCols(i);
+		a=K_nm.col(i);
+		b=K_mm.col(i).head(i);
+		c=A.transpose()*a+m_tau*b;
+		gamma=a.dot(a)+m_tau*K_mm(i,i);
+		g=sqrt(1+gamma);
+		u.head(i)=c/(1+g);
+		u(i)=g;
+		v.head(i)=u.head(i);
+		v(i)=-1;
+		e(i)=1;
+		llt.rankUpdate(e, -1);
+		e(i)=0;
+		llt.rankUpdate(u, 1);
+		llt.rankUpdate(v, -1);
+		x(i)=x0(i);
+		alphas=llt.solve(x);
 	}
-	for (index_t i=2; i<m_num_rkhs_basis; ++i)
-	{
-		// VectorXd are column vectors for the purposes of lilnear algebra operations
-		VectorXd a_i=K_nm.col(i); // or create once and update dymagically?
-		VectorXd b_i=K_mm.col(i).head(i);
-		MatrixXd A_i=K_nm.leftCols(i-1);
-		VectorXd c_i=A_i.transpose()*a_i+m_tau*b_i;
-		gamma=a_i.dot(a_i)+m_tau*K_mm(i,i);
-		float64_t g_i=sqrt(1+gamma);
-		VectorXd u_i;
-		u_i << c_i/(1+g_i), g_i, VectorXd::Zero(m_num_rkhs_basis-i);
-		VectorXd v_i;
-		v_i << c_i/(1+g_i), -1, VectorXd::Zero(m_num_rkhs_basis-i);
 
-		llt.rankUpdate(u_i, 1);
-		llt.rankUpdate(v_i, -1);
-
-		VectorXd b=A_i.transpose()*y;
-		// TODO: now need to solve ... tricky with zeros everywhere...
-		// ... can solve anyway somehow? ... we can just implement our own
-		// back/forwards substitution, or call our own, so easy - need to check
-		// first though that it worked to calcualte the cholesky
-
-	}
+	/* Expand alpha with zeros to size n */
+	SGVector<float64_t> alpha_n(n);
+	alpha_n.zero();
+	for (index_t i=0; i<m_num_rkhs_basis; ++i)
+		alpha_n[col[i]]=alphas[i];
+	m_alpha=alpha_n;
 
 	return true;
 }
