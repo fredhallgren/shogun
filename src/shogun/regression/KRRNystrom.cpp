@@ -126,11 +126,12 @@ bool CKRRNystrom::solve_krr_system()
 	alphas_eig=pseudoinv*K_mn_eig*y_eig;
 
 	/* Expand alpha with zeros to size n */
-	SGVector<float64_t> alpha_n(n);
-	alpha_n.zero();
+	// OK alphas is good
+	SGVector<float64_t> alphas_sg(m_num_rkhs_basis);
 	for (index_t i=0; i<m_num_rkhs_basis; ++i)
-		alpha_n[col[i]]=alphas_eig[i];
-	m_alpha=alpha_n;
+		alphas_sg[i]=alphas_eig[i];
+	m_alpha=alphas_sg;
+	m_svs=col;
 
 	return true;
 }
