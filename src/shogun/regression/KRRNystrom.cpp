@@ -129,9 +129,11 @@ bool CKRRNystrom::solve_krr_system()
 	// OK alphas is good
 	SGVector<float64_t> alphas_sg(m_num_rkhs_basis);
 	for (index_t i=0; i<m_num_rkhs_basis; ++i)
+	{
 		alphas_sg[i]=alphas_eig[i];
+		set_support_vector(i,col[i]);
+	}
 	m_alpha=alphas_sg;
-	m_svs=col;
 
 	return true;
 }
